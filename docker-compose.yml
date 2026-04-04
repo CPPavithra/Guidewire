@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  # 1. Core Enterprise Database
+  postgres-db:
+    image: postgres:15-alpine
+    container_name: guidewire_postgres
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password123
+      POSTGRES_DB: guidewire_poc
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d guidewire_poc"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # 2. Event-Driven Message Broker
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: guidewire_rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"   # Core AMQP protocol port for routing messages
+      - "15672:15672" # Management UI port (The visual dashboard)
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata: # This ensures your database data isn't deleted if you stop the container
